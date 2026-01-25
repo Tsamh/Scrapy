@@ -126,6 +126,17 @@ def _webscraper_csv_path(category_key: str) -> Path:
     return WEBSCRAPER_DATA_DIR / f"{category_key}_coinafrique_webscraper_brut.csv"
 
 
+def _category_from_filename(path: Path) -> Optional[str]:
+    # Extrait la categorie a partir du nom de fichier
+    suffix = "_coinafrique_webscraper_brut"
+    if path.suffix != ".csv":
+        return None
+    stem = path.stem
+    if stem.endswith(suffix):
+        return stem[: -len(suffix)]
+    return None
+
+
 def _load_webscraper_csv(category_key: str) -> pd.DataFrame:
     # Charge un fichier CSV Web Scraper pour une categorie
     csv_path = _webscraper_csv_path(category_key)
@@ -277,16 +288,9 @@ def _apply_theme(theme_key: str) -> None:
         }}
 
         /* Cartes des categories Web Scraper */
-        .web-card-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin-top: 12px;
-            margin-bottom: 16px;
-        }}
-
         .web-card {{
             height: 160px;
+            width: 100%;
             border-radius: 16px;
             background-size: cover;
             background-position: center;
@@ -301,6 +305,7 @@ def _apply_theme(theme_key: str) -> None:
             border: 2px solid transparent;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             text-decoration: none;
+            margin-bottom: 12px;
         }}
 
         .web-card::before {{
@@ -518,41 +523,63 @@ def main() -> None:
             "provenant des fichiers CSV."
         )
         category_order = tuple(CATEGORIES.keys())
-        # Selection de categorie via cartes cliquables
+        available_files = sorted(WEBSCRAPER_DATA_DIR.glob("*.csv"))
+        if not available_files:
+            st.warning(
+                "Aucun fichier CSV trouve dans data_webscraper/. "
+                "Ajoutez vos fichiers pour activer l'affichage."
+            )
+        # Selection par cartes cliquables
         selected_web_category = _get_query_param("webcat", category_order[0])
         if selected_web_category not in CATEGORIES:
             selected_web_category = category_order[0]
-        cards_html = ["<div class=\"web-card-grid\">"]
-        for key in category_order:
+
+        cols = st.columns(len(category_order))
+        for idx, key in enumerate(category_order):
             label = _category_label(key)
             image = CATEGORY_IMAGES.get(key, "")
             selected_class = "selected" if key == selected_web_category else ""
-            cards_html.append(
-                f"""
-                <a class="web-card {selected_class}" href="?webcat={key}"
-                   style="background-image:url('{image}')">
-                    <div class="web-card-title">{label}</div>
-                </a>
-                """
+            with cols[idx]:
+                st.markdown(
+                    f"""
+                    <a class="web-card {selected_class}" href="?webcat={key}"
+                       style="background-image:url('{image}')">
+                        <div class="web-card-title">{label}</div>
+                    </a>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+        # Choix libre du fichier CSV
+        selected_file = None
+        if available_files:
+            default_path = _webscraper_csv_path(selected_web_category)
+            if default_path not in available_files:
+                default_path = available_files[0]
+            selected_file = st.selectbox(
+                "Choisir un fichier CSV",
+                options=available_files,
+                index=available_files.index(default_path),
+                format_func=lambda path: path.name,
             )
-        cards_html.append("</div>")
-        st.markdown("".join(cards_html), unsafe_allow_html=True)
-        st.caption(f"Categorie selectionnee : {CATEGORIES[selected_web_category].label}")
-        webscraper_df = _load_webscraper_csv(selected_web_category)
-        if webscraper_df.empty:
-            st.warning(
-                "Aucune donnee trouvee. Ajoutez un fichier CSV dans "
-                f"{_webscraper_csv_path(selected_web_category)}."
-            )
-        else:
-            st.success(f"{len(webscraper_df)} annonces brutes.")
-            st.dataframe(webscraper_df, use_container_width=True)
-            st.download_button(
-                "Telecharger CSV brut",
-                data=_to_csv_bytes(webscraper_df),
-                file_name=_webscraper_csv_path(selected_web_category).name,
-                mime="text/csv",
-            )
+
+        if selected_file:
+            inferred_category = _category_from_filename(selected_file) or selected_web_category
+            st.caption(f"Categorie selectionnee : {CATEGORIES.get(inferred_category, CATEGORIES[selected_web_category]).label}")
+            webscraper_df = pd.read_csv(selected_file)
+            if "categorie" not in webscraper_df.columns:
+                webscraper_df["categorie"] = inferred_category
+            if webscraper_df.empty:
+                st.warning("Le fichier selectionne est vide.")
+            else:
+                st.success(f"{len(webscraper_df)} annonces brutes.")
+                st.dataframe(webscraper_df, use_container_width=True)
+                st.download_button(
+                    "Telecharger CSV brut",
+                    data=_to_csv_bytes(webscraper_df),
+                    file_name=selected_file.name,
+                    mime="text/csv",
+                )
 
     with tabs[2]:
         st.subheader("Dashboard - donnees nettoyees issues du Web Scraper")
