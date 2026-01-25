@@ -278,13 +278,13 @@ def _apply_theme(theme_key: str) -> None:
 
         /* Fond clair pour les tableaux */
         [data-testid="stDataFrame"] div[role="grid"] {{
-            background-color: #ffffff !important;
+            background-color: #f1f5f9 !important;
             color: var(--text) !important;
         }}
 
         [data-testid="stDataFrame"] th, 
         [data-testid="stDataFrame"] td {{
-            background-color: #ffffff !important;
+            background-color: #f1f5f9 !important;
             color: var(--text) !important;
         }}
 

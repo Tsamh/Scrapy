@@ -56,4 +56,5 @@ titre,prix,adresse,image_lien,categorie
 
 - The CSV uses the column `titre` for the listing title. It corresponds
   to Nom or Details depending on the category.
-- Price cleaning removes non-digits and keeps `None` for "Prix sur demande".
+- Price cleaning removes non-digits, then imputes missing values with the
+  average price for the category dataset.
