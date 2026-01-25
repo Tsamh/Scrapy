@@ -90,6 +90,15 @@ def _category_label(key: str) -> str:
     return CATEGORIES[key].label
 
 
+def _altair_scheme(theme_key: str) -> str:
+    # Palette Altair adaptee au theme selectionne
+    return {
+        "Ocean": "blues",
+        "Mango": "oranges",
+        "Lavande": "purples",
+    }.get(theme_key, "tableau10")
+
+
 def _apply_theme(theme_key: str) -> None:
     # Injection CSS pour personnaliser les couleurs et animations
     palette = THEMES[theme_key]
@@ -165,7 +174,10 @@ def _apply_theme(theme_key: str) -> None:
         }}
 
         .stTabs [data-baseweb="tab"][aria-selected="true"] {{
-            color: var(--primary);
+            color: #ffffff;
+            background: var(--secondary);
+            border-radius: 8px 8px 0 0;
+            padding: 0.4rem 0.8rem;
         }}
 
         /* Cartes et tableaux */
@@ -173,6 +185,16 @@ def _apply_theme(theme_key: str) -> None:
             background: var(--card);
             border-radius: 12px;
             box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+        }}
+
+        /* Couleur des categories dans les tags */
+        div[data-baseweb="tag"] {{
+            background: var(--secondary) !important;
+            border: none !important;
+        }}
+
+        div[data-baseweb="tag"] span {{
+            color: #ffffff !important;
         }}
 
         /* Cartes de formulaire dans l'onglet evaluation */
@@ -265,10 +287,12 @@ def main() -> None:
 
     with st.sidebar:
         st.header("Parametres")
-        theme_key = st.selectbox(
+        # Choix du theme (texte blanc dans la sidebar)
+        theme_key = st.radio(
             "Couleur du theme",
             options=list(THEMES.keys()),
             index=0,
+            horizontal=True,
         )
         selected_categories = st.multiselect(
             "Categories",
@@ -403,6 +427,7 @@ def main() -> None:
             categories_count = cleaned_ws_df["categorie"].nunique()
             price_series = cleaned_ws_df["prix"].dropna()
             median_price = price_series.median() if not price_series.empty else None
+            scheme = _altair_scheme(theme_key)
 
             col1, col2, col3 = st.columns(3)
             col1.metric("Annonces", total_ads)
@@ -416,7 +441,17 @@ def main() -> None:
                 .reset_index(name="count")
                 .sort_values("count")
             )
-            st.bar_chart(count_by_cat.set_index("categorie")["count"])
+            bar_chart = (
+                alt.Chart(count_by_cat)
+                .mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6)
+                .encode(
+                    x=alt.X("categorie:N", title="Categorie", sort="-y"),
+                    y=alt.Y("count:Q", title="Nombre d'annonces"),
+                    color=alt.Color("categorie:N", scale=alt.Scale(scheme=scheme)),
+                    tooltip=["categorie", "count"],
+                )
+            )
+            st.altair_chart(bar_chart, use_container_width=True)
 
             st.markdown("##### Repartition des annonces (diagramme circulaire)")
             pie_chart = (
@@ -424,7 +459,11 @@ def main() -> None:
                 .mark_arc(innerRadius=40)
                 .encode(
                     theta=alt.Theta(field="count", type="quantitative"),
-                    color=alt.Color(field="categorie", type="nominal"),
+                    color=alt.Color(
+                        field="categorie",
+                        type="nominal",
+                        scale=alt.Scale(scheme=scheme),
+                    ),
                     tooltip=["categorie", "count"],
                 )
             )
@@ -446,6 +485,7 @@ def main() -> None:
                     .encode(
                         x=alt.X("categorie:N", title="Categorie"),
                         y=alt.Y("prix:Q", title="Prix moyen (CFA)"),
+                        color=alt.value(THEMES[theme_key]["primary"]),
                         tooltip=["categorie", alt.Tooltip("prix:Q", format=",.0f")],
                     )
                 )
