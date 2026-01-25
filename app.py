@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, Tuple
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 
@@ -17,6 +18,12 @@ from scraper import (
 FORM_DEFAULTS = {
     "Kobo": "https://kobo.humanitarianresponse.info/#/forms",
     "Google Forms": "https://forms.gle/your-form-id",
+}
+
+# Images de fond pour les cartes de formulaire
+FORM_CARD_IMAGES = {
+    "Kobo": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=60",
+    "Google Forms": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=900&q=60",
 }
 
 # Palettes simples pour personnaliser le theme
@@ -168,6 +175,64 @@ def _apply_theme(theme_key: str) -> None:
             box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
         }}
 
+        /* Cartes de formulaire dans l'onglet evaluation */
+        .form-card-container {{
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }}
+
+        .form-card {{
+            width: 280px;
+            height: 180px;
+            border-radius: 16px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.18);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }}
+
+        .form-card::before {{
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.2));
+        }}
+
+        .form-card:hover {{
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 16px 28px rgba(15, 23, 42, 0.25);
+        }}
+
+        .form-card-overlay {{
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #ffffff;
+            text-align: center;
+            z-index: 1;
+        }}
+
+        .form-card-title {{
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffffff;
+        }}
+
+        .form-card-subtitle {{
+            font-size: 0.9rem;
+            color: #e2e8f0;
+        }}
+
         /* Animation d'apparition douce */
         .stTabs [data-baseweb="tab-panel"] {{
             animation: fadeIn 0.4s ease-in-out;
@@ -230,25 +295,16 @@ def main() -> None:
             value=0.3,
             step=0.1,
         )
-        form_type = st.radio(
-            "Type de formulaire",
-            options=["Kobo", "Google Forms"],
-            horizontal=True,
+        st.subheader("Formulaires d'evaluation")
+        kobo_url = st.text_input(
+            "Lien Kobo",
+            value=FORM_DEFAULTS["Kobo"],
+            key="kobo_url",
         )
-        default_form_url = FORM_DEFAULTS[form_type]
-        # Mise a jour intelligente du lien lors du changement de type
-        if "form_type" not in st.session_state:
-            st.session_state["form_type"] = form_type
-        if "form_url_input" not in st.session_state:
-            st.session_state["form_url_input"] = default_form_url
-        if st.session_state.get("form_type") != form_type:
-            if st.session_state["form_url_input"] in ("", FORM_DEFAULTS.get(st.session_state["form_type"], "")):
-                st.session_state["form_url_input"] = default_form_url
-            st.session_state["form_type"] = form_type
-        form_url = st.text_input(
-            "Lien du formulaire",
-            key="form_url_input",
-            placeholder=default_form_url,
+        google_url = st.text_input(
+            "Lien Google Forms",
+            value=FORM_DEFAULTS["Google Forms"],
+            key="google_url",
         )
 
     # Application du theme choisi
@@ -353,21 +409,47 @@ def main() -> None:
             col2.metric("Categories", categories_count)
             col3.metric("Prix median", _format_price(median_price))
 
-            st.markdown("##### Nombre d'annonces par categorie")
-            count_by_cat = cleaned_ws_df.groupby("categorie").size().sort_values()
-            st.bar_chart(count_by_cat)
+            st.markdown("##### Nombre d'annonces par categorie (barres)")
+            count_by_cat = (
+                cleaned_ws_df.groupby("categorie")
+                .size()
+                .reset_index(name="count")
+                .sort_values("count")
+            )
+            st.bar_chart(count_by_cat.set_index("categorie")["count"])
 
-            st.markdown("##### Prix moyen par categorie (CFA)")
+            st.markdown("##### Repartition des annonces (diagramme circulaire)")
+            pie_chart = (
+                alt.Chart(count_by_cat)
+                .mark_arc(innerRadius=40)
+                .encode(
+                    theta=alt.Theta(field="count", type="quantitative"),
+                    color=alt.Color(field="categorie", type="nominal"),
+                    tooltip=["categorie", "count"],
+                )
+            )
+            st.altair_chart(pie_chart, use_container_width=True)
+
+            st.markdown("##### Prix moyen par categorie (courbe)")
             avg_price_by_cat = (
                 cleaned_ws_df.dropna(subset=["prix"])
                 .groupby("categorie")["prix"]
                 .mean()
-                .sort_values()
+                .reset_index()
             )
             if avg_price_by_cat.empty:
                 st.info("Pas assez de prix numeriques pour le graphique.")
             else:
-                st.bar_chart(avg_price_by_cat)
+                line_chart = (
+                    alt.Chart(avg_price_by_cat)
+                    .mark_line(point=True)
+                    .encode(
+                        x=alt.X("categorie:N", title="Categorie"),
+                        y=alt.Y("prix:Q", title="Prix moyen (CFA)"),
+                        tooltip=["categorie", alt.Tooltip("prix:Q", format=",.0f")],
+                    )
+                )
+                st.altair_chart(line_chart, use_container_width=True)
 
             st.markdown("##### Top annonces par prix")
             top_df = cleaned_ws_df.dropna(subset=["prix"]).sort_values(
@@ -380,10 +462,30 @@ def main() -> None:
         st.write(
             "Merci de remplir le formulaire d'evaluation pour donner votre avis."
         )
-        if form_url:
-            st.markdown(f"[Ouvrir le formulaire {form_type}]({form_url})")
-        else:
-            st.info("Ajoutez un lien Kobo ou Google Forms dans la barre laterale.")
+        # Cartes cliquables pour choisir le formulaire
+        kobo_link = kobo_url or FORM_DEFAULTS["Kobo"]
+        google_link = google_url or FORM_DEFAULTS["Google Forms"]
+        kobo_image = FORM_CARD_IMAGES["Kobo"]
+        google_image = FORM_CARD_IMAGES["Google Forms"]
+        st.markdown(
+            f"""
+            <div class="form-card-container">
+                <a class="form-card" href="{kobo_link}" target="_blank" style="background-image:url('{kobo_image}')">
+                    <div class="form-card-overlay">
+                        <div class="form-card-title">Kobo Form</div>
+                        <div class="form-card-subtitle">Ouvrir le formulaire</div>
+                    </div>
+                </a>
+                <a class="form-card" href="{google_link}" target="_blank" style="background-image:url('{google_image}')">
+                    <div class="form-card-overlay">
+                        <div class="form-card-title">Google Forms</div>
+                        <div class="form-card-subtitle">Ouvrir le formulaire</div>
+                    </div>
+                </a>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 if __name__ == "__main__":
