@@ -16,8 +16,8 @@ from scraper import (
 
 # Valeurs par defaut pour les liens de formulaire
 FORM_DEFAULTS = {
-    "Kobo": "https://kobo.humanitarianresponse.info/#/forms",
-    "Google Forms": "https://forms.gle/your-form-id",
+    "Kobo": "https://ee.kobotoolbox.org/x/qu2XMTMf",
+    "Google Forms": "https://docs.google.com/forms/d/e/1FAIpQLScNZ_ftGzYCyrMieoRGxsj88IkbCmGg2Pv66Lrh13B02a3Hxw/viewform?usp=header",
 }
 
 # Images de fond pour les cartes de formulaire
@@ -281,7 +281,7 @@ def main() -> None:
     # Titre principal
     st.title("CoinAfrique - Scraping animaux")
     st.caption(
-        "Scraping multi-pages avec BeautifulSoup (nettoye) "
+        "Scraping multi-pages avec BeautifulSoup (nettoyée) "
         "et pipeline Web Scraper (brut)."
     )
 
@@ -338,9 +338,9 @@ def main() -> None:
 
     tabs = st.tabs(
         [
-            "Scraping nettoye (BeautifulSoup)",
-            "Donnees Web Scraper (brutes)",
-            "Dashboard (donnees nettoyees)",
+            "Scraping nettoyé (BeautifulSoup)",
+            "Données Web Scraper (brutes)",
+            "Dashboard (données nettoyées)",
             "Evaluation",
         ]
     )
@@ -353,7 +353,7 @@ def main() -> None:
         )
         if not selected_categories:
             st.warning("Selectionnez au moins une categorie.")
-        if st.button("Lancer le scraping nettoye"):
+        if st.button("Lancer le scraping nettoyé"):
             if selected_categories:
                 with st.spinner("Scraping en cours..."):
                     cleaned_df = _cached_scrape(
@@ -366,15 +366,15 @@ def main() -> None:
                 st.session_state["bs4_clean_df"] = cleaned_df
         cleaned_df = st.session_state.get("bs4_clean_df")
         if isinstance(cleaned_df, pd.DataFrame) and not cleaned_df.empty:
-            st.success(f"{len(cleaned_df)} annonces nettoyees.")
+            st.success(f"{len(cleaned_df)} annonces nettoyées.")
             for key in selected_categories:
                 category_df = format_category_dataframe(cleaned_df, key)
                 st.markdown(f"#### {CATEGORIES[key].label}")
                 st.dataframe(category_df, use_container_width=True)
             st.download_button(
-                "Telecharger CSV nettoye",
+                "Télécharger CSV nettoyé",
                 data=_to_csv_bytes(cleaned_df),
-                file_name="coinafrique_bs4_nettoye.csv",
+                file_name="scrapy_donnees_nettoyees_coinafrique.csv",
                 mime="text/csv",
             )
         elif isinstance(cleaned_df, pd.DataFrame):
@@ -410,15 +410,15 @@ def main() -> None:
                 mime="text/csv",
             )
         elif isinstance(raw_df, pd.DataFrame):
-            st.info("Aucune donnee brute disponible.")
+            st.info("Aucune donnée brute disponible.")
 
     with tabs[2]:
-        st.subheader("Dashboard - donnees nettoyees issues du Web Scraper")
+        st.subheader("Dashboard - données nettoyées issues du Web Scraper")
         raw_df = st.session_state.get("webscraper_raw_df")
         if not isinstance(raw_df, pd.DataFrame) or raw_df.empty:
             st.info(
-                "Lancez d'abord le Web Scraper dans l'onglet precedent "
-                "pour alimenter le dashboard."
+                "Lancez d'abord le Web Scraper dans l'onglet précédent "
+                "pour voir le dashboard."
             )
         else:
             # Nettoyage des donnees brutes pour le dashboard
