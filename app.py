@@ -110,6 +110,17 @@ def _altair_scheme(theme_key: str) -> str:
     }.get(theme_key, "tableau10")
 
 
+def _get_query_param(name: str, default: str) -> str:
+    # Recuperation robuste d'un parametre d'URL (Streamlit recent/ancien)
+    try:
+        value = st.query_params.get(name)
+    except AttributeError:
+        value = st.experimental_get_query_params().get(name)
+    if isinstance(value, list):
+        value = value[0] if value else default
+    return value or default
+
+
 def _webscraper_csv_path(category_key: str) -> Path:
     # Chemin attendu pour les CSV webscraper
     return WEBSCRAPER_DATA_DIR / f"{category_key}_coinafrique_webscraper_brut.csv"
@@ -266,14 +277,16 @@ def _apply_theme(theme_key: str) -> None:
         }}
 
         /* Cartes des categories Web Scraper */
-        section.main div[data-testid="stRadio"] > div {{
+        .web-card-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 16px;
+            margin-top: 12px;
+            margin-bottom: 16px;
         }}
 
-        section.main div[data-testid="stRadio"] label {{
-            height: 150px;
+        .web-card {{
+            height: 160px;
             border-radius: 16px;
             background-size: cover;
             background-position: center;
@@ -287,36 +300,32 @@ def _apply_theme(theme_key: str) -> None:
             overflow: hidden;
             border: 2px solid transparent;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none;
         }}
 
-        section.main div[data-testid="stRadio"] label:hover {{
+        .web-card::before {{
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.2));
+        }}
+
+        .web-card:hover {{
             transform: translateY(-4px);
             box-shadow: 0 12px 20px rgba(15, 23, 42, 0.18);
         }}
 
-        section.main div[data-testid="stRadio"] label input {{
-            display: none !important;
-        }}
-
-        section.main div[data-testid="stRadio"] label input:checked + div {{
+        .web-card.selected {{
             border: 2px solid var(--secondary);
-            background: rgba(15, 23, 42, 0.35);
+            transform: translateY(-2px) scale(1.01);
         }}
 
-        section.main div[data-testid="stRadio"] label:nth-of-type(1) {{
-            background-image: url('{CATEGORY_IMAGES["chiens"]}');
-        }}
-
-        section.main div[data-testid="stRadio"] label:nth-of-type(2) {{
-            background-image: url('{CATEGORY_IMAGES["moutons"]}');
-        }}
-
-        section.main div[data-testid="stRadio"] label:nth-of-type(3) {{
-            background-image: url('{CATEGORY_IMAGES["poules-lapins-et-pigeons"]}');
-        }}
-
-        section.main div[data-testid="stRadio"] label:nth-of-type(4) {{
-            background-image: url('{CATEGORY_IMAGES["autres-animaux"]}');
+        .web-card-title {{
+            position: relative;
+            z-index: 1;
+            font-size: 1.05rem;
+            text-align: center;
+            padding: 0 10px;
         }}
 
         /* Cartes de formulaire dans l'onglet evaluation */
@@ -509,12 +518,26 @@ def main() -> None:
             "provenant des fichiers CSV."
         )
         category_order = tuple(CATEGORIES.keys())
-        selected_web_category = st.radio(
-            "Categorie Web Scraper",
-            options=category_order,
-            format_func=_category_label,
-            label_visibility="collapsed",
-        )
+        # Selection de categorie via cartes cliquables
+        selected_web_category = _get_query_param("webcat", category_order[0])
+        if selected_web_category not in CATEGORIES:
+            selected_web_category = category_order[0]
+        cards_html = ["<div class=\"web-card-grid\">"]
+        for key in category_order:
+            label = _category_label(key)
+            image = CATEGORY_IMAGES.get(key, "")
+            selected_class = "selected" if key == selected_web_category else ""
+            cards_html.append(
+                f"""
+                <a class="web-card {selected_class}" href="?webcat={key}"
+                   style="background-image:url('{image}')">
+                    <div class="web-card-title">{label}</div>
+                </a>
+                """
+            )
+        cards_html.append("</div>")
+        st.markdown("".join(cards_html), unsafe_allow_html=True)
+        st.caption(f"Categorie selectionnee : {CATEGORIES[selected_web_category].label}")
         webscraper_df = _load_webscraper_csv(selected_web_category)
         if webscraper_df.empty:
             st.warning(
