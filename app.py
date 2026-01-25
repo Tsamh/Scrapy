@@ -95,14 +95,45 @@ def _apply_theme(theme_key: str) -> None:
             --accent: {palette["accent"]};
             --background: {palette["background"]};
             --card: {palette["card"]};
+            --text: #0f172a;
+            --text-muted: #475569;
         }}
 
         .stApp {{
             background: var(--background);
+            color: var(--text);
         }}
 
         h1, h2, h3, h4, h5 {{
             color: var(--accent);
+        }}
+
+        /* Texte global lisible */
+        p, span, label, li, div {{
+            color: var(--text);
+        }}
+
+        .stMarkdown, .stText, .stCaption {{
+            color: var(--text);
+        }}
+
+        /* Sidebar coloree selon le theme */
+        [data-testid="stSidebar"] {{
+            background: var(--primary);
+        }}
+
+        /* Texte blanc dans la sidebar pour contraste */
+        [data-testid="stSidebar"] * {{
+            color: #ffffff !important;
+        }}
+
+        /* Champs d'entree lisibles dans la sidebar */
+        [data-testid="stSidebar"] input,
+        [data-testid="stSidebar"] textarea,
+        [data-testid="stSidebar"] select {{
+            color: #0f172a !important;
+            background: #ffffff !important;
+            border-radius: 8px;
         }}
 
         /* Boutons plus attractifs avec une micro-animation */
@@ -123,6 +154,7 @@ def _apply_theme(theme_key: str) -> None:
         /* Onglets */
         .stTabs [data-baseweb="tab"] {{
             font-weight: 600;
+            color: var(--text-muted);
         }}
 
         .stTabs [data-baseweb="tab"][aria-selected="true"] {{
