@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Optional, Tuple
 
 import altair as alt
@@ -25,6 +26,16 @@ FORM_CARD_IMAGES = {
     "Kobo": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=60",
     "Google Forms": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=900&q=60",
 }
+
+# Images de fond pour les cartes de categories Web Scraper
+CATEGORY_IMAGES = {
+    "chiens": "https://images.unsplash.com/photo-1518378188025-22bd89516ee2?auto=format&fit=crop&w=900&q=60",
+    "moutons": "https://images.unsplash.com/photo-1501706362039-c6e80948fdb4?auto=format&fit=crop&w=900&q=60",
+    "poules-lapins-et-pigeons": "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?auto=format&fit=crop&w=900&q=60",
+    "autres-animaux": "https://images.unsplash.com/photo-1508675801627-066ac4346a6e?auto=format&fit=crop&w=900&q=60",
+}
+
+WEBSCRAPER_DATA_DIR = Path("data_webscraper")
 
 # Palettes simples pour personnaliser le theme
 THEMES = {
@@ -97,6 +108,34 @@ def _altair_scheme(theme_key: str) -> str:
         "Mango": "oranges",
         "Lavande": "purples",
     }.get(theme_key, "tableau10")
+
+
+def _webscraper_csv_path(category_key: str) -> Path:
+    # Chemin attendu pour les CSV webscraper
+    return WEBSCRAPER_DATA_DIR / f"{category_key}_coinafrique_webscraper_brut.csv"
+
+
+def _load_webscraper_csv(category_key: str) -> pd.DataFrame:
+    # Charge un fichier CSV Web Scraper pour une categorie
+    csv_path = _webscraper_csv_path(category_key)
+    if not csv_path.exists():
+        return pd.DataFrame()
+    dataframe = pd.read_csv(csv_path)
+    if "categorie" not in dataframe.columns:
+        dataframe["categorie"] = category_key
+    return dataframe
+
+
+def _load_all_webscraper_data(category_keys: Tuple[str, ...]) -> pd.DataFrame:
+    # Charge tous les CSV disponibles et les concatene
+    frames = []
+    for key in category_keys:
+        category_df = _load_webscraper_csv(key)
+        if not category_df.empty:
+            frames.append(category_df)
+    if not frames:
+        return pd.DataFrame()
+    return pd.concat(frames, ignore_index=True)
 
 
 def _apply_theme(theme_key: str) -> None:
@@ -224,6 +263,60 @@ def _apply_theme(theme_key: str) -> None:
 
         [data-testid="stDataFrame"] [data-testid="stToolbar"] svg {{
             fill: var(--accent) !important;
+        }}
+
+        /* Cartes des categories Web Scraper */
+        section.main div[data-testid="stRadio"] > div {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }}
+
+        section.main div[data-testid="stRadio"] label {{
+            height: 150px;
+            border-radius: 16px;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff !important;
+            font-weight: 700;
+            text-shadow: 0 2px 6px rgba(15, 23, 42, 0.6);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid transparent;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }}
+
+        section.main div[data-testid="stRadio"] label:hover {{
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px rgba(15, 23, 42, 0.18);
+        }}
+
+        section.main div[data-testid="stRadio"] label input {{
+            display: none !important;
+        }}
+
+        section.main div[data-testid="stRadio"] label input:checked + div {{
+            border: 2px solid var(--secondary);
+            background: rgba(15, 23, 42, 0.35);
+        }}
+
+        section.main div[data-testid="stRadio"] label:nth-of-type(1) {{
+            background-image: url('{CATEGORY_IMAGES["chiens"]}');
+        }}
+
+        section.main div[data-testid="stRadio"] label:nth-of-type(2) {{
+            background-image: url('{CATEGORY_IMAGES["moutons"]}');
+        }}
+
+        section.main div[data-testid="stRadio"] label:nth-of-type(3) {{
+            background-image: url('{CATEGORY_IMAGES["poules-lapins-et-pigeons"]}');
+        }}
+
+        section.main div[data-testid="stRadio"] label:nth-of-type(4) {{
+            background-image: url('{CATEGORY_IMAGES["autres-animaux"]}');
         }}
 
         /* Cartes de formulaire dans l'onglet evaluation */
@@ -410,43 +503,40 @@ def main() -> None:
             st.info("Aucune donnee trouvee pour cette selection.")
 
     with tabs[1]:
-        st.subheader("Scraping brut via Web Scraper")
+        st.subheader("Donnees Web Scraper (brutes)")
         st.write(
-            "Extraction brute (sans nettoyage). "
-            "Les prix restent tels que recuperes sur la page."
+            "Selectionnez une categorie pour afficher les donnees brutes "
+            "provenant des fichiers CSV."
         )
-        if not selected_categories:
-            st.warning("Selectionnez au moins une categorie.")
-        if st.button("Lancer Web Scraper (brut)"):
-            if selected_categories:
-                with st.spinner("Scraping brut en cours..."):
-                    raw_df = _cached_scrape(
-                        category_keys=tuple(selected_categories),
-                        pages=pages,
-                        clean=False,
-                        delay_seconds=delay_seconds,
-                        max_pages_limit=MAX_PAGES_LIMIT,
-                    )
-                st.session_state["webscraper_raw_df"] = raw_df
-        raw_df = st.session_state.get("webscraper_raw_df")
-        if isinstance(raw_df, pd.DataFrame) and not raw_df.empty:
-            st.success(f"{len(raw_df)} annonces brutes.")
-            st.dataframe(raw_df.head(50), use_container_width=True)
+        category_order = tuple(CATEGORIES.keys())
+        selected_web_category = st.radio(
+            "Categorie Web Scraper",
+            options=category_order,
+            format_func=_category_label,
+            label_visibility="collapsed",
+        )
+        webscraper_df = _load_webscraper_csv(selected_web_category)
+        if webscraper_df.empty:
+            st.warning(
+                "Aucune donnee trouvee. Ajoutez un fichier CSV dans "
+                f"{_webscraper_csv_path(selected_web_category)}."
+            )
+        else:
+            st.success(f"{len(webscraper_df)} annonces brutes.")
+            st.dataframe(webscraper_df, use_container_width=True)
             st.download_button(
                 "Telecharger CSV brut",
-                data=_to_csv_bytes(raw_df),
-                file_name="coinafrique_webscraper_brut.csv",
+                data=_to_csv_bytes(webscraper_df),
+                file_name=_webscraper_csv_path(selected_web_category).name,
                 mime="text/csv",
             )
-        elif isinstance(raw_df, pd.DataFrame):
-            st.info("Aucune donnee brute disponible.")
 
     with tabs[2]:
         st.subheader("Dashboard - donnees nettoyees issues du Web Scraper")
-        raw_df = st.session_state.get("webscraper_raw_df")
-        if not isinstance(raw_df, pd.DataFrame) or raw_df.empty:
+        raw_df = _load_all_webscraper_data(tuple(CATEGORIES.keys()))
+        if raw_df.empty:
             st.info(
-                "Lancez d'abord le Web Scraper dans l'onglet precedent "
+                "Ajoutez des fichiers CSV dans le dossier data_webscraper "
                 "pour alimenter le dashboard."
             )
         else:
