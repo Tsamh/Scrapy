@@ -152,6 +152,20 @@ def _apply_theme(theme_key: str) -> None:
             border-radius: 8px;
         }}
 
+        /* Menu deroulant des categories (texte blanc) */
+        [data-testid="stSidebar"] [data-baseweb="menu"] {{
+            background: var(--primary) !important;
+        }}
+
+        [data-testid="stSidebar"] [data-baseweb="menu"] * {{
+            color: #ffffff !important;
+        }}
+
+        [data-testid="stSidebar"] [role="option"][aria-selected="true"] {{
+            background: var(--secondary) !important;
+            color: #ffffff !important;
+        }}
+
         /* Boutons plus attractifs avec une micro-animation */
         .stButton > button, .stDownloadButton > button {{
             background: var(--primary);
@@ -195,6 +209,21 @@ def _apply_theme(theme_key: str) -> None:
 
         div[data-baseweb="tag"] span {{
             color: #ffffff !important;
+        }}
+
+        /* Barre d'actions des dataframes (icones visibles) */
+        [data-testid="stDataFrame"] [data-testid="stToolbar"] {{
+            background: var(--card);
+            border-radius: 10px;
+            padding: 4px;
+        }}
+
+        [data-testid="stDataFrame"] [data-testid="stToolbar"] button {{
+            color: var(--accent) !important;
+        }}
+
+        [data-testid="stDataFrame"] [data-testid="stToolbar"] svg {{
+            fill: var(--accent) !important;
         }}
 
         /* Cartes de formulaire dans l'onglet evaluation */
