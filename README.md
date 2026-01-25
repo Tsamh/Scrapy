@@ -31,6 +31,26 @@ streamlit run app.py
 - Tab 2: raw data (no cleaning) via Web Scraper.
 - Tab 3: dashboard using cleaned Web Scraper data.
 - Tab 4: evaluation form link (set in the sidebar, Kobo or Google).
+ 
+## Web Scraper CSVs
+
+Place CSV files in `data_webscraper/` using this format:
+
+```
+nomcategorie_coinafrique_webscraper_brut.csv
+```
+
+Example:
+
+```
+chiens_coinafrique_webscraper_brut.csv
+```
+
+Each CSV should include:
+
+```
+titre,prix,adresse,image_lien,categorie
+```
 
 ## Notes
 

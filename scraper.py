@@ -89,6 +89,19 @@ def clean_price(price_text: Optional[str]) -> Optional[int]:
     return int(digits)
 
 
+def fill_missing_prices(df: pd.DataFrame) -> pd.DataFrame:
+    # Remplace les prix manquants par la moyenne des prix disponibles
+    if "prix" not in df.columns or df.empty:
+        return df
+    cleaned = df.copy()
+    prices = pd.to_numeric(cleaned["prix"], errors="coerce")
+    mean_price = prices.dropna().mean()
+    if pd.isna(mean_price):
+        return cleaned
+    cleaned["prix"] = prices.fillna(mean_price)
+    return cleaned
+
+
 def _extract_text(element, clean: bool) -> str:
     if not element:
         return ""
@@ -171,7 +184,11 @@ def scrape_categories(
                 max_pages_limit=max_pages_limit,
             )
         )
-    return pd.DataFrame(all_records)
+    dataframe = pd.DataFrame(all_records)
+    if clean and not dataframe.empty:
+        # Imputation des prix manquants apres nettoyage
+        dataframe = fill_missing_prices(dataframe)
+    return dataframe
 
 
 def format_category_dataframe(df: pd.DataFrame, category_key: str) -> pd.DataFrame:
@@ -191,4 +208,4 @@ def clean_webscraper_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
     cleaned["titre"] = cleaned["titre"].apply(normalize_text)
     cleaned["adresse"] = cleaned["adresse"].apply(normalize_text)
     cleaned["prix"] = cleaned["prix"].apply(clean_price)
-    return cleaned
+    return fill_missing_prices(cleaned)
