@@ -29,10 +29,10 @@ FORM_CARD_IMAGES = {
 
 # Images de fond pour les cartes de categories Web Scraper
 CATEGORY_IMAGES = {
-    "chiens": "https://source.unsplash.com/featured/900x600/?dog",
-    "moutons": "https://source.unsplash.com/featured/900x600/?sheep",
-    "poules-lapins-et-pigeons": "https://source.unsplash.com/featured/900x600/?chicken,rabbit,pigeon",
-    "autres-animaux": "https://source.unsplash.com/featured/900x600/?animal",
+    "chiens": "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=900&q=60",
+    "moutons": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
+    "poules-lapins-et-pigeons": "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=900&q=60",
+    "autres-animaux": "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=900&q=60",
 }
 
 WEBSCRAPER_DATA_DIR = Path("data_webscraper")
@@ -274,6 +274,18 @@ def _apply_theme(theme_key: str) -> None:
 
         [data-testid="stDataFrame"] [data-testid="stToolbar"] svg {{
             fill: var(--accent) !important;
+        }}
+
+        /* Fond clair pour les tableaux */
+        [data-testid="stDataFrame"] div[role="grid"] {{
+            background-color: #ffffff !important;
+            color: var(--text) !important;
+        }}
+
+        [data-testid="stDataFrame"] th, 
+        [data-testid="stDataFrame"] td {{
+            background-color: #ffffff !important;
+            color: var(--text) !important;
         }}
 
         /* Cartes des categories Web Scraper */
@@ -558,24 +570,16 @@ def main() -> None:
         )
         st.caption(f"Categorie selectionnee : {CATEGORIES[selected_web_category].label}")
 
-        # Choix libre du fichier CSV
-        selected_file = None
-        if available_files:
-            default_path = _webscraper_csv_path(selected_web_category)
-            if default_path not in available_files:
-                default_path = available_files[0]
-            selected_file = st.selectbox(
-                "Choisir un fichier CSV",
-                options=available_files,
-                index=available_files.index(default_path),
-                format_func=lambda path: path.name,
+        selected_path = _webscraper_csv_path(selected_web_category)
+        if not selected_path.exists():
+            st.warning(
+                "Aucune donnee trouvee. Ajoutez un fichier CSV dans "
+                f"{selected_path}."
             )
-
-        if selected_file:
-            inferred_category = _category_from_filename(selected_file) or selected_web_category
-            webscraper_df = pd.read_csv(selected_file)
+        else:
+            webscraper_df = pd.read_csv(selected_path)
             if "categorie" not in webscraper_df.columns:
-                webscraper_df["categorie"] = inferred_category
+                webscraper_df["categorie"] = selected_web_category
             if webscraper_df.empty:
                 st.warning("Le fichier selectionne est vide.")
             else:
@@ -584,7 +588,7 @@ def main() -> None:
                 st.download_button(
                     "Telecharger CSV brut",
                     data=_to_csv_bytes(webscraper_df),
-                    file_name=selected_file.name,
+                    file_name=selected_path.name,
                     mime="text/csv",
                 )
 
