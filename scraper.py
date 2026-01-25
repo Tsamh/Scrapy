@@ -78,12 +78,17 @@ def normalize_text(value: Optional[str]) -> str:
 
 
 def clean_price(price_text: Optional[str]) -> Optional[int]:
-    if not price_text:
+    if price_text is None:
         return None
-    lowered = price_text.lower()
+    if isinstance(price_text, (int, float)) and not pd.isna(price_text):
+        return int(price_text)
+    text = str(price_text).strip()
+    if not text:
+        return None
+    lowered = text.lower()
     if "sur demande" in lowered:
         return None
-    digits = re.sub(r"[^\d]", "", price_text)
+    digits = re.sub(r"[^\d]", "", text)
     if not digits:
         return None
     return int(digits)
@@ -100,6 +105,28 @@ def fill_missing_prices(df: pd.DataFrame) -> pd.DataFrame:
         return cleaned
     cleaned["prix"] = prices.fillna(mean_price)
     return cleaned
+
+
+def _normalize_column_name(name: str) -> str:
+    # Normalise le nom des colonnes pour les correspondances
+    return (
+        str(name)
+        .strip()
+        .lstrip("\ufeff")
+        .lower()
+        .replace(" ", "_")
+        .replace("-", "_")
+    )
+
+
+def _find_column(columns: Sequence[str], candidates: Sequence[str]) -> Optional[str]:
+    # Trouve une colonne existante parmi des candidats
+    normalized = {_normalize_column_name(col): col for col in columns}
+    for candidate in candidates:
+        key = _normalize_column_name(candidate)
+        if key in normalized:
+            return normalized[key]
+    return None
 
 
 def _extract_text(element, clean: bool) -> str:
@@ -204,8 +231,21 @@ def format_category_dataframe(df: pd.DataFrame, category_key: str) -> pd.DataFra
 def clean_webscraper_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
     if raw_df.empty:
         return raw_df.copy()
-    cleaned = raw_df.copy()
-    cleaned["titre"] = cleaned["titre"].apply(normalize_text)
-    cleaned["adresse"] = cleaned["adresse"].apply(normalize_text)
-    cleaned["prix"] = cleaned["prix"].apply(clean_price)
+    title_col = _find_column(raw_df.columns, ["titre", "nom", "details", "detail"])
+    price_col = _find_column(raw_df.columns, ["prix", "price"])
+    address_col = _find_column(raw_df.columns, ["adresse", "location", "localisation"])
+    image_col = _find_column(raw_df.columns, ["image_lien", "image", "image_url", "image_link"])
+    category_col = _find_column(raw_df.columns, ["categorie", "category"])
+
+    cleaned = pd.DataFrame()
+    cleaned["titre"] = (
+        raw_df[title_col].apply(normalize_text) if title_col else ""
+    )
+    cleaned["adresse"] = (
+        raw_df[address_col].apply(normalize_text) if address_col else ""
+    )
+    cleaned["prix"] = raw_df[price_col].apply(clean_price) if price_col else None
+    cleaned["image_lien"] = raw_df[image_col].fillna("") if image_col else ""
+    cleaned["categorie"] = raw_df[category_col].fillna("") if category_col else ""
+
     return fill_missing_prices(cleaned)
