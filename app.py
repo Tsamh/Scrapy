@@ -29,10 +29,10 @@ FORM_CARD_IMAGES = {
 
 # Images de fond pour les cartes de categories Web Scraper
 CATEGORY_IMAGES = {
-    "chiens": "https://images.unsplash.com/photo-1518378188025-22bd89516ee2?auto=format&fit=crop&w=900&q=60",
-    "moutons": "https://images.unsplash.com/photo-1501706362039-c6e80948fdb4?auto=format&fit=crop&w=900&q=60",
-    "poules-lapins-et-pigeons": "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?auto=format&fit=crop&w=900&q=60",
-    "autres-animaux": "https://images.unsplash.com/photo-1508675801627-066ac4346a6e?auto=format&fit=crop&w=900&q=60",
+    "chiens": "https://source.unsplash.com/featured/900x600/?dog",
+    "moutons": "https://source.unsplash.com/featured/900x600/?sheep",
+    "poules-lapins-et-pigeons": "https://source.unsplash.com/featured/900x600/?chicken,rabbit,pigeon",
+    "autres-animaux": "https://source.unsplash.com/featured/900x600/?animal",
 }
 
 WEBSCRAPER_DATA_DIR = Path("data_webscraper")
@@ -108,17 +108,6 @@ def _altair_scheme(theme_key: str) -> str:
         "Mango": "oranges",
         "Lavande": "purples",
     }.get(theme_key, "tableau10")
-
-
-def _get_query_param(name: str, default: str) -> str:
-    # Recuperation robuste d'un parametre d'URL (Streamlit recent/ancien)
-    try:
-        value = st.query_params.get(name)
-    except AttributeError:
-        value = st.experimental_get_query_params().get(name)
-    if isinstance(value, list):
-        value = value[0] if value else default
-    return value or default
 
 
 def _webscraper_csv_path(category_key: str) -> Path:
@@ -288,9 +277,16 @@ def _apply_theme(theme_key: str) -> None:
         }}
 
         /* Cartes des categories Web Scraper */
-        .web-card {{
+        section.main div[data-testid="stRadio"] > div {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 12px;
+            margin-bottom: 16px;
+        }}
+
+        section.main div[data-testid="stRadio"] label {{
             height: 160px;
-            width: 100%;
             border-radius: 16px;
             background-size: cover;
             background-position: center;
@@ -304,33 +300,51 @@ def _apply_theme(theme_key: str) -> None:
             overflow: hidden;
             border: 2px solid transparent;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            text-decoration: none;
-            margin-bottom: 12px;
         }}
 
-        .web-card::before {{
+        section.main div[data-testid="stRadio"] label::before {{
             content: "";
             position: absolute;
             inset: 0;
             background: linear-gradient(135deg, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.2));
         }}
 
-        .web-card:hover {{
+        section.main div[data-testid="stRadio"] label:hover {{
             transform: translateY(-4px);
             box-shadow: 0 12px 20px rgba(15, 23, 42, 0.18);
         }}
 
-        .web-card.selected {{
-            border: 2px solid var(--secondary);
-            transform: translateY(-2px) scale(1.01);
+        section.main div[data-testid="stRadio"] label input {{
+            display: none !important;
         }}
 
-        .web-card-title {{
+        section.main div[data-testid="stRadio"] label input:checked + div {{
+            border: 2px solid var(--secondary);
+            background: rgba(15, 23, 42, 0.35);
+        }}
+
+        section.main div[data-testid="stRadio"] label > div {{
             position: relative;
             z-index: 1;
-            font-size: 1.05rem;
-            text-align: center;
             padding: 0 10px;
+            text-align: center;
+            font-size: 1.05rem;
+        }}
+
+        section.main div[data-testid="stRadio"] label:nth-of-type(1) {{
+            background-image: url('{CATEGORY_IMAGES["chiens"]}');
+        }}
+
+        section.main div[data-testid="stRadio"] label:nth-of-type(2) {{
+            background-image: url('{CATEGORY_IMAGES["moutons"]}');
+        }}
+
+        section.main div[data-testid="stRadio"] label:nth-of-type(3) {{
+            background-image: url('{CATEGORY_IMAGES["poules-lapins-et-pigeons"]}');
+        }}
+
+        section.main div[data-testid="stRadio"] label:nth-of-type(4) {{
+            background-image: url('{CATEGORY_IMAGES["autres-animaux"]}');
         }}
 
         /* Cartes de formulaire dans l'onglet evaluation */
@@ -529,26 +543,20 @@ def main() -> None:
                 "Aucun fichier CSV trouve dans data_webscraper/. "
                 "Ajoutez vos fichiers pour activer l'affichage."
             )
-        # Selection par cartes cliquables
-        selected_web_category = _get_query_param("webcat", category_order[0])
-        if selected_web_category not in CATEGORIES:
-            selected_web_category = category_order[0]
-
-        cols = st.columns(len(category_order))
-        for idx, key in enumerate(category_order):
-            label = _category_label(key)
-            image = CATEGORY_IMAGES.get(key, "")
-            selected_class = "selected" if key == selected_web_category else ""
-            with cols[idx]:
-                st.markdown(
-                    f"""
-                    <a class="web-card {selected_class}" href="?webcat={key}"
-                       style="background-image:url('{image}')">
-                        <div class="web-card-title">{label}</div>
-                    </a>
-                    """,
-                    unsafe_allow_html=True,
-                )
+        # Selection par cartes (radio stylise)
+        if "web_category" not in st.session_state:
+            st.session_state["web_category"] = category_order[0]
+        if st.session_state["web_category"] not in category_order:
+            st.session_state["web_category"] = category_order[0]
+        selected_web_category = st.radio(
+            "Categorie Web Scraper",
+            options=category_order,
+            index=category_order.index(st.session_state["web_category"]),
+            format_func=_category_label,
+            key="web_category",
+            label_visibility="collapsed",
+        )
+        st.caption(f"Categorie selectionnee : {CATEGORIES[selected_web_category].label}")
 
         # Choix libre du fichier CSV
         selected_file = None
@@ -565,7 +573,6 @@ def main() -> None:
 
         if selected_file:
             inferred_category = _category_from_filename(selected_file) or selected_web_category
-            st.caption(f"Categorie selectionnee : {CATEGORIES.get(inferred_category, CATEGORIES[selected_web_category]).label}")
             webscraper_df = pd.read_csv(selected_file)
             if "categorie" not in webscraper_df.columns:
                 webscraper_df["categorie"] = inferred_category
