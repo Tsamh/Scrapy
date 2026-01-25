@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import io
-from typing import Iterable, Optional, Sequence, Tuple
+from typing import Optional, Tuple
 
 import pandas as pd
 import streamlit as st
@@ -14,10 +13,40 @@ from scraper import (
     scrape_categories,
 )
 
-DEFAULT_FORM_URL = "https://forms.gle/your-form-id"
+# Valeurs par defaut pour les liens de formulaire
+FORM_DEFAULTS = {
+    "Kobo": "https://kobo.humanitarianresponse.info/#/forms",
+    "Google Forms": "https://forms.gle/your-form-id",
+}
+
+# Palettes simples pour personnaliser le theme
+THEMES = {
+    "Ocean": {
+        "primary": "#0ea5e9",
+        "secondary": "#38bdf8",
+        "accent": "#0f172a",
+        "background": "#f0f9ff",
+        "card": "#ffffff",
+    },
+    "Mango": {
+        "primary": "#f97316",
+        "secondary": "#fb923c",
+        "accent": "#7c2d12",
+        "background": "#fff7ed",
+        "card": "#ffffff",
+    },
+    "Lavande": {
+        "primary": "#8b5cf6",
+        "secondary": "#a78bfa",
+        "accent": "#312e81",
+        "background": "#f5f3ff",
+        "card": "#ffffff",
+    },
+}
 
 
 def _format_price(value: Optional[float]) -> str:
+    # Affiche un prix lisible ou "N/A" si absence de valeur
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "N/A"
     try:
@@ -27,6 +56,7 @@ def _format_price(value: Optional[float]) -> str:
 
 
 def _to_csv_bytes(df: pd.DataFrame) -> bytes:
+    # Conversion du dataframe vers un CSV telechargeable
     return df.to_csv(index=False).encode("utf-8")
 
 
@@ -38,6 +68,7 @@ def _cached_scrape(
     delay_seconds: float,
     max_pages_limit: int,
 ) -> pd.DataFrame:
+    # Cache pour eviter de re-scraper inutilement
     return scrape_categories(
         category_keys=category_keys,
         pages=pages,
@@ -48,11 +79,87 @@ def _cached_scrape(
 
 
 def _category_label(key: str) -> str:
+    # Libelle plus lisible dans la sidebar
     return CATEGORIES[key].label
+
+
+def _apply_theme(theme_key: str) -> None:
+    # Injection CSS pour personnaliser les couleurs et animations
+    palette = THEMES[theme_key]
+    st.markdown(
+        f"""
+        <style>
+        :root {{
+            --primary: {palette["primary"]};
+            --secondary: {palette["secondary"]};
+            --accent: {palette["accent"]};
+            --background: {palette["background"]};
+            --card: {palette["card"]};
+        }}
+
+        .stApp {{
+            background: var(--background);
+        }}
+
+        h1, h2, h3, h4, h5 {{
+            color: var(--accent);
+        }}
+
+        /* Boutons plus attractifs avec une micro-animation */
+        .stButton > button, .stDownloadButton > button {{
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.55rem 1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }}
+
+        .stButton > button:hover, .stDownloadButton > button:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+        }}
+
+        /* Onglets */
+        .stTabs [data-baseweb="tab"] {{
+            font-weight: 600;
+        }}
+
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {{
+            color: var(--primary);
+        }}
+
+        /* Cartes et tableaux */
+        .stDataFrame, .stMetric {{
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+        }}
+
+        /* Animation d'apparition douce */
+        .stTabs [data-baseweb="tab-panel"] {{
+            animation: fadeIn 0.4s ease-in-out;
+        }}
+
+        @keyframes fadeIn {{
+            from {{
+                opacity: 0;
+                transform: translateY(6px);
+            }}
+            to {{
+                opacity: 1;
+                transform: translateY(0);
+            }}
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def main() -> None:
     st.set_page_config(page_title="CoinAfrique Scraper", layout="wide")
+    # Titre principal
     st.title("CoinAfrique - Scraping animaux")
     st.caption(
         "Scraping multi-pages avec BeautifulSoup (nettoye) "
@@ -61,6 +168,11 @@ def main() -> None:
 
     with st.sidebar:
         st.header("Parametres")
+        theme_key = st.selectbox(
+            "Couleur du theme",
+            options=list(THEMES.keys()),
+            index=0,
+        )
         selected_categories = st.multiselect(
             "Categories",
             options=list(CATEGORIES.keys()),
@@ -86,7 +198,29 @@ def main() -> None:
             value=0.3,
             step=0.1,
         )
-        form_url = st.text_input("Lien formulaire (Kobo/Google)", value=DEFAULT_FORM_URL)
+        form_type = st.radio(
+            "Type de formulaire",
+            options=["Kobo", "Google Forms"],
+            horizontal=True,
+        )
+        default_form_url = FORM_DEFAULTS[form_type]
+        # Mise a jour intelligente du lien lors du changement de type
+        if "form_type" not in st.session_state:
+            st.session_state["form_type"] = form_type
+        if "form_url_input" not in st.session_state:
+            st.session_state["form_url_input"] = default_form_url
+        if st.session_state.get("form_type") != form_type:
+            if st.session_state["form_url_input"] in ("", FORM_DEFAULTS.get(st.session_state["form_type"], "")):
+                st.session_state["form_url_input"] = default_form_url
+            st.session_state["form_type"] = form_type
+        form_url = st.text_input(
+            "Lien du formulaire",
+            key="form_url_input",
+            placeholder=default_form_url,
+        )
+
+    # Application du theme choisi
+    _apply_theme(theme_key)
 
     pages: Optional[int] = None if scrape_all_pages else int(pages_input)
 
@@ -175,6 +309,7 @@ def main() -> None:
                 "pour alimenter le dashboard."
             )
         else:
+            # Nettoyage des donnees brutes pour le dashboard
             cleaned_ws_df = clean_webscraper_dataframe(raw_df)
             total_ads = len(cleaned_ws_df)
             categories_count = cleaned_ws_df["categorie"].nunique()
@@ -214,7 +349,7 @@ def main() -> None:
             "Merci de remplir le formulaire d'evaluation pour donner votre avis."
         )
         if form_url:
-            st.markdown(f"[Ouvrir le formulaire]({form_url})")
+            st.markdown(f"[Ouvrir le formulaire {form_type}]({form_url})")
         else:
             st.info("Ajoutez un lien Kobo ou Google Forms dans la barre laterale.")
 

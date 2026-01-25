@@ -13,6 +13,7 @@ Streamlit app to scrape CoinAfrique animal listings and explore results.
 - Download raw data (CSV).
 - Dashboard on cleaned data coming from Web Scraper.
 - Link to an evaluation form (Kobo or Google Forms).
+- Theme selection (3 colors) with subtle animations.
 
 ## Setup
 
@@ -29,7 +30,7 @@ streamlit run app.py
 - Tab 1: cleaned data via BeautifulSoup.
 - Tab 2: raw data (no cleaning) via Web Scraper.
 - Tab 3: dashboard using cleaned Web Scraper data.
-- Tab 4: evaluation form link (set in the sidebar).
+- Tab 4: evaluation form link (set in the sidebar, Kobo or Google).
 
 ## Notes
 
