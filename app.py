@@ -291,7 +291,7 @@ def _apply_theme(theme_key: str) -> None:
         /* Cartes des categories Web Scraper */
         [data-testid="stRadio"] > div {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 16px;
             margin-top: 12px;
             margin-bottom: 16px;
@@ -345,6 +345,7 @@ def _apply_theme(theme_key: str) -> None:
             padding: 0 10px;
             text-align: center;
             font-size: 1.05rem;
+            color: #ffffff !important;
         }}
 
         [data-testid="stRadio"] label:nth-of-type(1) {{
@@ -361,6 +362,31 @@ def _apply_theme(theme_key: str) -> None:
 
         [data-testid="stRadio"] label:nth-of-type(4) {{
             background-image: url('{CATEGORY_IMAGES["autres-animaux"]}') !important;
+        }}
+
+        /* Restaure les radios de la sidebar en style standard */
+        [data-testid="stSidebar"] [data-testid="stRadio"] > div {{
+            display: block;
+            margin: 0;
+        }}
+
+        [data-testid="stSidebar"] [data-testid="stRadio"] label {{
+            min-height: unset;
+            height: auto;
+            background: none !important;
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+            color: #ffffff !important;
+            text-shadow: none;
+        }}
+
+        [data-testid="stSidebar"] [data-testid="stRadio"] label::before {{
+            content: none;
+        }}
+
+        [data-testid="stSidebar"] [data-testid="stRadio"] label > div {{
+            color: #ffffff !important;
         }}
 
         /* Cartes de formulaire dans l'onglet evaluation */
