@@ -644,7 +644,7 @@ def main() -> None:
             cleaned_ws_df = clean_webscraper_dataframe(raw_df)
             total_ads = len(cleaned_ws_df)
             categories_count = cleaned_ws_df["categorie"].nunique()
-            price_series = cleaned_ws_df["prix"].dropna()
+            price_series = pd.to_numeric(cleaned_ws_df["prix"], errors="coerce").dropna()
             median_price = price_series.median() if not price_series.empty else None
             scheme = _altair_scheme(theme_key)
 

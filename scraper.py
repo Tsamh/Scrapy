@@ -95,15 +95,35 @@ def clean_price(price_text: Optional[str]) -> Optional[int]:
 
 
 def fill_missing_prices(df: pd.DataFrame) -> pd.DataFrame:
-    # Remplace les prix manquants par la moyenne des prix disponibles
+    # Remplace les prix manquants par la moyenne (par categorie si possible)
     if "prix" not in df.columns or df.empty:
         return df
     cleaned = df.copy()
     prices = pd.to_numeric(cleaned["prix"], errors="coerce")
-    mean_price = prices.dropna().mean()
-    if pd.isna(mean_price):
+    overall_mean = prices.dropna().mean()
+    if "categorie" not in cleaned.columns:
+        if pd.isna(overall_mean):
+            return cleaned
+        cleaned["prix"] = prices.fillna(overall_mean)
         return cleaned
-    cleaned["prix"] = prices.fillna(mean_price)
+
+    # Moyenne par categorie, fallback sur la moyenne globale
+    category_means = (
+        cleaned.assign(_prix_num=prices)
+        .groupby("categorie")["_prix_num"]
+        .mean()
+    )
+    filled = []
+    for value, category in zip(prices, cleaned["categorie"]):
+        if pd.isna(value):
+            category_mean = category_means.get(category)
+            if pd.isna(category_mean):
+                filled.append(overall_mean)
+            else:
+                filled.append(category_mean)
+        else:
+            filled.append(value)
+    cleaned["prix"] = filled
     return cleaned
 
 
