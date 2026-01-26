@@ -289,7 +289,7 @@ def _apply_theme(theme_key: str) -> None:
         }}
 
         /* Cartes des categories Web Scraper */
-        section.main div[data-testid="stRadio"] > div {{
+        [data-testid="stRadio"] > div {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 16px;
@@ -297,11 +297,12 @@ def _apply_theme(theme_key: str) -> None:
             margin-bottom: 16px;
         }}
 
-        section.main div[data-testid="stRadio"] label {{
-            height: 160px;
+        [data-testid="stRadio"] label {{
+            min-height: 160px;
             border-radius: 16px;
-            background-size: cover;
-            background-position: center;
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -312,30 +313,33 @@ def _apply_theme(theme_key: str) -> None:
             overflow: hidden;
             border: 2px solid transparent;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
         }}
 
-        section.main div[data-testid="stRadio"] label::before {{
+        [data-testid="stRadio"] label::before {{
             content: "";
             position: absolute;
             inset: 0;
             background: linear-gradient(135deg, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.2));
         }}
 
-        section.main div[data-testid="stRadio"] label:hover {{
+        [data-testid="stRadio"] label:hover {{
             transform: translateY(-4px);
             box-shadow: 0 12px 20px rgba(15, 23, 42, 0.18);
         }}
 
-        section.main div[data-testid="stRadio"] label input {{
+        [data-testid="stRadio"] label input {{
             display: none !important;
         }}
 
-        section.main div[data-testid="stRadio"] label input:checked + div {{
+        [data-testid="stRadio"] label input:checked + div {{
             border: 2px solid var(--secondary);
             background: rgba(15, 23, 42, 0.35);
+            border-radius: 12px;
+            padding: 6px 10px;
         }}
 
-        section.main div[data-testid="stRadio"] label > div {{
+        [data-testid="stRadio"] label > div {{
             position: relative;
             z-index: 1;
             padding: 0 10px;
@@ -343,20 +347,20 @@ def _apply_theme(theme_key: str) -> None:
             font-size: 1.05rem;
         }}
 
-        section.main div[data-testid="stRadio"] label:nth-of-type(1) {{
-            background-image: url('{CATEGORY_IMAGES["chiens"]}');
+        [data-testid="stRadio"] label:nth-of-type(1) {{
+            background-image: url('{CATEGORY_IMAGES["chiens"]}') !important;
         }}
 
-        section.main div[data-testid="stRadio"] label:nth-of-type(2) {{
-            background-image: url('{CATEGORY_IMAGES["moutons"]}');
+        [data-testid="stRadio"] label:nth-of-type(2) {{
+            background-image: url('{CATEGORY_IMAGES["moutons"]}') !important;
         }}
 
-        section.main div[data-testid="stRadio"] label:nth-of-type(3) {{
-            background-image: url('{CATEGORY_IMAGES["poules-lapins-et-pigeons"]}');
+        [data-testid="stRadio"] label:nth-of-type(3) {{
+            background-image: url('{CATEGORY_IMAGES["poules-lapins-et-pigeons"]}') !important;
         }}
 
-        section.main div[data-testid="stRadio"] label:nth-of-type(4) {{
-            background-image: url('{CATEGORY_IMAGES["autres-animaux"]}');
+        [data-testid="stRadio"] label:nth-of-type(4) {{
+            background-image: url('{CATEGORY_IMAGES["autres-animaux"]}') !important;
         }}
 
         /* Cartes de formulaire dans l'onglet evaluation */
