@@ -348,6 +348,15 @@ def _apply_theme(theme_key: str) -> None:
             color: #ffffff !important;
         }}
 
+        /* Masque le cercle radio dans l'onglet Web Scraper */
+        section.main [data-testid="stRadio"] svg {{
+            display: none !important;
+        }}
+
+        section.main [data-testid="stRadio"] label > div > div:first-child {{
+            display: none !important;
+        }}
+
         [data-testid="stRadio"] label:nth-of-type(1) {{
             background-image: url('{CATEGORY_IMAGES["chiens"]}') !important;
         }}
