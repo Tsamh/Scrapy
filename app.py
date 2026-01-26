@@ -289,7 +289,7 @@ def _apply_theme(theme_key: str) -> None:
         }}
 
         /* Cartes des categories Web Scraper */
-        [data-testid="stRadio"] > div {{
+        section.main [data-testid="stRadio"] div[role="radiogroup"] {{
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 16px;
@@ -297,7 +297,7 @@ def _apply_theme(theme_key: str) -> None:
             margin-bottom: 16px;
         }}
 
-        [data-testid="stRadio"] label {{
+        section.main [data-testid="stRadio"] div[role="radiogroup"] > label {{
             min-height: 160px;
             border-radius: 16px;
             background-size: cover !important;
@@ -316,30 +316,30 @@ def _apply_theme(theme_key: str) -> None:
             cursor: pointer;
         }}
 
-        [data-testid="stRadio"] label::before {{
+        section.main [data-testid="stRadio"] div[role="radiogroup"] > label::before {{
             content: "";
             position: absolute;
             inset: 0;
             background: linear-gradient(135deg, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.2));
         }}
 
-        [data-testid="stRadio"] label:hover {{
+        section.main [data-testid="stRadio"] div[role="radiogroup"] > label:hover {{
             transform: translateY(-4px);
             box-shadow: 0 12px 20px rgba(15, 23, 42, 0.18);
         }}
 
-        [data-testid="stRadio"] label input {{
+        section.main [data-testid="stRadio"] div[role="radiogroup"] > label input {{
             display: none !important;
         }}
 
-        [data-testid="stRadio"] label input:checked + div {{
+        section.main [data-testid="stRadio"] div[role="radiogroup"] > label input:checked + div {{
             border: 2px solid var(--secondary);
             background: rgba(15, 23, 42, 0.35);
             border-radius: 12px;
             padding: 6px 10px;
         }}
 
-        [data-testid="stRadio"] label > div {{
+        section.main [data-testid="stRadio"] div[role="radiogroup"] > label > div {{
             position: relative;
             z-index: 1;
             padding: 0 10px;
@@ -357,19 +357,19 @@ def _apply_theme(theme_key: str) -> None:
             display: none !important;
         }}
 
-        [data-testid="stRadio"] label:nth-of-type(1) {{
+        section.main [data-testid="stRadio"] div[role="radiogroup"] > label:nth-child(1) {{
             background-image: url('{CATEGORY_IMAGES["chiens"]}') !important;
         }}
 
-        [data-testid="stRadio"] label:nth-of-type(2) {{
+        section.main [data-testid="stRadio"] div[role="radiogroup"] > label:nth-child(2) {{
             background-image: url('{CATEGORY_IMAGES["moutons"]}') !important;
         }}
 
-        [data-testid="stRadio"] label:nth-of-type(3) {{
+        section.main [data-testid="stRadio"] div[role="radiogroup"] > label:nth-child(3) {{
             background-image: url('{CATEGORY_IMAGES["poules-lapins-et-pigeons"]}') !important;
         }}
 
-        [data-testid="stRadio"] label:nth-of-type(4) {{
+        section.main [data-testid="stRadio"] div[role="radiogroup"] > label:nth-child(4) {{
             background-image: url('{CATEGORY_IMAGES["autres-animaux"]}') !important;
         }}
 
