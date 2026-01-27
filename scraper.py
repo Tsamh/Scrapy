@@ -100,6 +100,10 @@ def fill_missing_prices(df: pd.DataFrame) -> pd.DataFrame:
         return df
     cleaned = df.copy()
     prices = pd.to_numeric(cleaned["prix"], errors="coerce")
+    if prices.isna().any():
+        # Tente d'extraire les chiffres si le prix est une chaine (ex: "325 000 CFA")
+        parsed_prices = cleaned["prix"].where(prices.isna()).apply(clean_price)
+        prices = prices.where(~prices.isna(), parsed_prices)
     overall_mean = prices.dropna().mean()
     if "categorie" not in cleaned.columns:
         if pd.isna(overall_mean):

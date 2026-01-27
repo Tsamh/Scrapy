@@ -65,7 +65,7 @@ THEMES = {
 
 def _format_price(value: Optional[float]) -> str:
     # Affiche un prix lisible ou "N/A" si absence de valeur
-    if value is None or (isinstance(value, float) and pd.isna(value)):
+    if value is None or pd.isna(value):
         return "N/A"
     try:
         return f"{int(value):,}".replace(",", " ") + " CFA"
