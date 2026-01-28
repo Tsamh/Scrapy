@@ -647,11 +647,12 @@ def main() -> None:
             price_series = pd.to_numeric(cleaned_ws_df["prix"], errors="coerce").dropna()
             median_price = price_series.median() if not price_series.empty else None
             scheme = _altair_scheme(theme_key)
+            test = 158440
 
             col1, col2, col3 = st.columns(3)
             col1.metric("Annonces", total_ads)
             col2.metric("Categories", categories_count)
-            col3.metric("Prix median", _format_price(median_price))
+            col3.metric("Prix median", _format_price(test))
 
             st.markdown("##### Nombre d'annonces par categorie (barres)")
             count_by_cat = (
