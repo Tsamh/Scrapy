@@ -17,8 +17,8 @@ from scraper import (
 
 # Valeurs par defaut pour les liens de formulaire
 FORM_DEFAULTS = {
-    "Kobo": "https://ee.kobotoolbox.org/x/qu2XMTMf",
-    "Google Forms": "https://docs.google.com/forms/d/e/1FAIpQLScNZ_ftGzYCyrMieoRGxsj88IkbCmGg2Pv66Lrh13B02a3Hxw/viewform?usp=header",
+    "Kobo": "https://ee.kobotoolbox.org/x/qggfLQqP",
+    "Google Forms": "https://docs.google.com/forms/d/e/1FAIpQLSe_ciPZSZn-zZHSlgPLqcAAW1VblWUgqcK8KqxeDHD2euIvRA/viewform?usp=dialog",
 }
 
 # Images de fond pour les cartes de formulaire
